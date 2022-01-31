@@ -2,110 +2,145 @@
 
 pragma solidity ^0.8.0;
 
-/// @author: swms.de
+/// @author: SWMS.de
 
-import "./access/AdminControl.sol";
-import "./core/IERC721CreatorCore.sol";
-import "./extensions/ICreatorExtensionTokenURI.sol";
+import "@manifoldxyz/creator-core-solidity/contracts/core/IERC721CreatorCore.sol";
+import "@manifoldxyz/libraries-solidity/contracts/access/AdminControl.sol";
+import "@manifoldxyz/creator-core-solidity/contracts/extensions/ICreatorExtensionTokenURI.sol";
+
+import "@openzeppelin/contracts/token/ERC721/ERC721.sol";
 import "@openzeppelin/contracts/utils/Counters.sol";
+import "./libraries/Base64.sol";
 
-import "@openzeppelin/contracts/token/ERC721/IERC721.sol";
-import "@openzeppelin/contracts/access/Ownable.sol";
-import "@openzeppelin/contracts/utils/Strings.sol";
-import "@openzeppelin/contracts/utils/introspection/ERC165.sol";
 
-/**
- * As I recall, I know you love to show off
- * But I never thought that you would take it this far
- * What do I know?
- */
-contract ExtensionMint is AdminControl, ICreatorExtensionTokenURI {
-    using Strings for uint256;
-
+contract ExtensionMint is AdminControl,ICreatorExtensionTokenURI,ERC721 {
+    using Counters for Counters.Counter;
+    Counters.Counter private _tokenIds;
     address private _creator;
     uint256 private _tokenId;
-    string public _script;
-    string private _name;
-    string private _description;
-    string private _attributes;
-    string[2] private _previews;
+    uint256 public constant PRICE = 0.01 ether;
+    address[] internal nftHolders;
 
-    constructor(address creator) {
+     struct NFTAttributes {
+        string name;
+        string imageURI;
+        string description;
+        string attributes;
+    }
+    mapping(uint256 => NFTAttributes) public nftHolderAttributes;
+
+    constructor(string memory name, string memory symbol, address creator) ERC721(name,symbol){
         _creator = creator;
     }
 
-    function supportsInterface(bytes4 interfaceId)
+
+    function supportsInterface(bytes4 interfaceId) public view virtual override(AdminControl, IERC165,ERC721) returns (bool) {
+        return interfaceId == type(ICreatorExtensionTokenURI).interfaceId 
+        || AdminControl.supportsInterface(interfaceId) 
+        || super.supportsInterface(interfaceId);
+    }
+
+    function mint(uint16 _count,string memory image,string memory name, string memory description, string memory attributes)
         public
-        view
-        virtual
-        override(AdminControl, IERC165)
-        returns (bool)
-    {
-        return
-            interfaceId == type(ICreatorExtensionTokenURI).interfaceId ||
-            AdminControl.supportsInterface(interfaceId) ||
-            super.supportsInterface(interfaceId);
-    }
-
-    function mint(
-        string memory name,
-        string memory description,
-        string memory image
-    ) public adminRequired {
-        require(_tokenId == 0, "Token already minted");
-        _name = name;
-        _description = description;
-        _previews[0] = image;
-        _tokenId = IERC721CreatorCore(_creator).mintExtension(msg.sender);
-    }
-
-    function setName(string memory name) private adminRequired {
-        _name = name;
-    }
-
-    function setDescription(string memory description) private adminRequired {
-        _description = description;
-    }
-
-    function setAttributes(string memory attributes) private adminRequired {
-        _attributes = attributes;
-    }
-
-    function setPreviews(string memory imagePreview, string memory videoPreview)
-        private
+        payable
     {
         require(
-            IERC721(_creator).ownerOf(_tokenId) == msg.sender ||
-                isAdmin(msg.sender),
-            "Only owner or admin can change."
+            msg.value >= PRICE * _count,
+            "Not enough ether to purchase NFTs."
         );
-        _previews[0] = imagePreview;
-        _previews[1] = videoPreview;
+        require(
+            _count > 0
+        );
+        
+        for (uint256 i = 0; i < _count; i++) {
+            _mintSingleNFT(image, name, description,attributes);
+        }
     }
-
-    function tokenURI(address creator, uint256 tokenId)
-        external
+    function tokenURI(uint256 _tokenId)
+        public
         view
         override
         returns (string memory)
     {
-        require(creator == _creator && tokenId == _tokenId, "Invalid token");
-        return
-            string(
-                abi.encodePacked(
-                    "data:application/json;utf8,",
-                    '{"name":"',
-                    _name,
-                    '","created_by":"SWMS","description":"',
-                    _description,
-                    '","image":"',
-                    _previews[0],
-                    '","image_url":"',
-                    _previews[0],
-                    '","attributes":[',
-                    _attributes,
-                    "]}"
+        string memory json = Base64.encode(
+            bytes(
+                string(
+                     abi.encodePacked(
+                        '{"name": "',
+                        nftHolderAttributes[_tokenId].name,
+                        '", "description": "',
+                        nftHolderAttributes[_tokenId].description,
+                        '", "image": "',
+                        nftHolderAttributes[_tokenId].imageURI,
+                        '", "attributes": "',
+                        nftHolderAttributes[_tokenId].attributes,
+                        '"}'
+                    )
                 )
-            );
+            )
+        );
+
+        string memory output = string(
+            abi.encodePacked("data:application/json;base64,", json)
+        );
+
+        return output;
+    }
+
+    function tokenURI(address creator,uint256 _tokenId)
+        public
+        view
+        override
+        returns (string memory)
+    {
+        //require(creator == _creator && tokenId == _tokenId, "Invalid token");
+        string memory json = Base64.encode(
+            bytes(
+                string(
+                    abi.encodePacked(
+                        '{"name": "',
+                        nftHolderAttributes[_tokenId].name,
+                        '", "description": "',
+                        nftHolderAttributes[_tokenId].description,
+                        '", "image": "',
+                        nftHolderAttributes[_tokenId].imageURI,
+                        '", "attributes": "',
+                        nftHolderAttributes[_tokenId].attributes,
+                        '"}'
+                    )
+                )
+            )
+        );
+
+        string memory output = string(
+            abi.encodePacked("data:application/json;base64,", json)
+        );
+
+        return output;
+    }
+
+    function _mintSingleNFT(string memory image,
+        string memory name,
+        string memory description,
+        string memory attributes
+        ) private {
+        uint256 newItemId = _tokenIds.current();
+         nftHolderAttributes[newItemId] = NFTAttributes({
+            name: name,
+            imageURI: image,
+            description: description,
+            attributes: attributes
+        });
+        IERC721CreatorCore(_creator).mintExtension(msg.sender);
+        _tokenIds.increment();
+    }
+
+    function getBalance() public view returns (uint256) {
+        return address(this).balance;
+    }
+
+    function withdraw() public payable adminRequired {
+        require(address(this).balance > 0);
+        payable(owner()).transfer(address(this).balance);
     }
 }

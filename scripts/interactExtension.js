@@ -1,13 +1,23 @@
 require('dotenv').config();
-
+/**
+ * @author: swms.de
+ * This File ist just a Demo.
+ * please use https://github.com/Janaros/web3-react-template
+ * 
+ * 
+ * 
+ */
 // Settings please adjust
-const tokenName = "TestToken"; // Token name
-const tokenDescription = "This is a nice token"; // Token Description
 const PUBLIC_KEY = "0xee8E9221497f30F44164B8d6fF7ad0347aF16F69";  // Wallet Address sender
 const PRIVATE_KEY = process.env.PRIVATE_KEY; //Private Walled Key
-const contractAddress = "0x630840643A3CC59F0DAB675dd94C5eff5B9677b7"; // Contract Address
-const tokenURI = "https://arweave.net/nc_yCW7wThLQL_VtJ1Sn_IRkM3LS7JmG2iiAwc_XsOs"; // Image!
+const contractAddress = "0xb99D99bD625AB129507c739Fb73c19cd034753D4"; // Contract Address
+
 const API_URL = process.env.STAGING_ALCHEMY_KEY; // Alchemy API Url
+const count = 1;
+const image = "https://arweave.net/nc_yCW7wThLQL_VtJ1Sn_IRkM3LS7JmG2iiAwc_XsOs"; // Image!
+const name = "Token 1";
+const description = "Token 1 description";
+const attributes = "[{-}]";
 
 
 const { createAlchemyWeb3 } = require("@alch/alchemy-web3");
@@ -20,17 +30,13 @@ const nftContract = new web3.eth.Contract(contract.abi, contractAddress);
 
 async function mintNFT() {
   const nonce = await web3.eth.getTransactionCount(PUBLIC_KEY, 'latest'); //get latest nonce
-  console.log("initialize");
-
-
-  HTMLFormControlsCollection.log(test)
-  console.log("MInting");
-
-
+  console.log("Minting");
   gasPrice = web3.eth.getGasPrice(function (error, gasPrice) {
     web3.eth.estimateGas({
       to: contractAddress,
-      nonce: nonce,
+      from: PUBLIC_KEY,
+      value: 10000000000000000,
+      data: nftContract.methods.mint(count,image, name, description,attributes).encodeABI()
 
     }).then((estimatedGas) => {
       console.log("---------------------------------------------------------------------");
@@ -44,7 +50,8 @@ async function mintNFT() {
         'nonce': nonce,
         'gasPrice': gasPrice,
         'gas': estimatedGas,
-        'data': nftContract.methods.mint().encodeABI()
+        'value': 10000000000000000,
+        'data': nftContract.methods.mint(count,image, name, description,attributes).encodeABI()
       };
       const signPromise = web3.eth.accounts.signTransaction(tx, PRIVATE_KEY)
       signPromise
@@ -69,14 +76,11 @@ async function mintNFT() {
           )
         })
         .catch((err) => {
-          console.log(" Promise failed:", err)
+          console.log(" Promise sendSignedTransaction failed:", err)
         })
+    }).catch(err  => {
+      console.log(" Promise getGasPrice failed:", err)
     });
-
-
-
-
-
   });
 
 

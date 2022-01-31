@@ -3,9 +3,11 @@ require("@nomiclabs/hardhat-etherscan");
 require('dotenv').config();
 module.exports = {
   solidity: '0.8.0',
-  "optimizer": {
-    "enabled": true,
-    "runs": 200
+  settings: { 
+    "optimizer": {
+      "enabled": true,
+      "runs": 300
+    },
   },
   "outputSelection": {
     "*": {
@@ -21,7 +23,7 @@ module.exports = {
   },
   "libraries": {},
   etherscan: {
-    apiKey: process.env.ETHERSCAN_API_TOKEN
+    apiKey: process.env.ETHERSCAN_API_TOKEN // Etherscan API Key for verification
   },
   polyscan: {
     apiKey: process.env.POLYSCAN_API_TOKEN

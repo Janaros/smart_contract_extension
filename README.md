@@ -1,6 +1,7 @@
 # Manifold Solidity Extension
 
 This smart contract extends the Manifold contract. So you can extend it with features like lazy minting or splitting.
+Using free alchemy API: https://alchemy.com/?r=2b92f94f5cd00a17
 
 ### Installation
 
@@ -16,8 +17,8 @@ This smart contract extends the Manifold contract. So you can extend it with fea
 ### Deploy on Rinkeby Testnet
 
 1. Setup scripts/deployExtension.js
-   set mainContract to your Manifold Contract
-2.npx hardhat run scripts/deployExtension.js --network rinkeby
+   set mainContract to your Manifold Contract, change name and symbol
+2. run: npx hardhat run scripts/deployExtension.js --network rinkeby
 3. Verify your code on the Testnet 
     npx hardhat verify  --network rinkeby "NEW_CONTRACT_ADDRESS" MANIFOLD_CONTRACT_ADDRESS --show-stack-traces 
 4. If everything worked, you can view your contract at        https://rinkeby.etherscan.io/address/[NEWCONTRACT]#code
@@ -31,9 +32,9 @@ This smart contract extends the Manifold contract. So you can extend it with fea
 5. click write 
 
 
-### Mint a token
+### Mint a token (Example)
 
 1. Setup scripts/interactExtension.js
-2. Setup your constants in lines 4 to 10
+2. Setup your constants in lines 11 to 20
 3. npx run scripts/interact.js
  
