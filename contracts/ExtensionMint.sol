@@ -9,14 +9,13 @@ import "@manifoldxyz/libraries-solidity/contracts/access/AdminControl.sol";
 import "@manifoldxyz/creator-core-solidity/contracts/extensions/ICreatorExtensionTokenURI.sol";
 
 import "@openzeppelin/contracts/token/ERC721/ERC721.sol";
-import "@openzeppelin/contracts/utils/Counters.sol";
 import "./libraries/Base64.sol";
 
-
 contract ExtensionMint is AdminControl,ICreatorExtensionTokenURI,ERC721 {
-    using Counters for Counters.Counter;
-    Counters.Counter private _tokenIds;
+    
+    
     address private _creator;
+    uint256 private _tokenIds;
     uint256 private _tokenId;
     uint256 public constant PRICE = 0.01 ether;
     address[] internal nftHolders;
@@ -124,7 +123,7 @@ contract ExtensionMint is AdminControl,ICreatorExtensionTokenURI,ERC721 {
         string memory description,
         string memory attributes
         ) private {
-        uint256 newItemId = _tokenIds.current();
+        uint256 newItemId = _tokenIds;
          nftHolderAttributes[newItemId] = NFTAttributes({
             name: name,
             imageURI: image,
@@ -132,7 +131,7 @@ contract ExtensionMint is AdminControl,ICreatorExtensionTokenURI,ERC721 {
             attributes: attributes
         });
         IERC721CreatorCore(_creator).mintExtension(msg.sender);
-        _tokenIds.increment();
+        _tokenIds++;
     }
 
     function getBalance() public view returns (uint256) {
